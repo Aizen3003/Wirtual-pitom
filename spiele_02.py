@@ -11,8 +11,11 @@ PADDING = 5
 BUTTON_WIDTH = 200
 BUTTON_HEIGHT = 60
 
-DOG_WIDTH = 290
-DOG_HEIGHT = 450
+DOG_WIDTH = 310
+DOG_HEIGHT = 500
+
+MENU_NAV_XPAD = 90
+MENU_NAV_YPAD = 130
 
 font = pg.font.Font(None, 40)
 mini_font = pg.font.Font(None, 15)
@@ -55,10 +58,43 @@ class ClothesMeny:
         self.top_label_on = load_immage("images/menu/top_label_on.png", SCREEN_WIDTH, SCREEN_HEIGHT)
 
         self.items = [Item("Синяя футболка", 10, "images/items/blue t-shirt.png"),
-                      Item("Ботинки", 50, "images/items/boots t-shirt.png"),
-                      Item("Шляпа", 50, "images/items/hat t-shirt.png")]
+                      Item("Ботинки", 50, "images/items/boots.png"),
+                      Item("Шляпа", 50, "images/items/hat.png")]
         
         self.current_item = 0
+
+        self.item_rect = self.items[0].image.get_rect()
+        self.item_rect.center = (SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2)
+
+        self.next_button = Button("Вперёд", SCREEN_WIDTH - MENU_NAV_XPAD - BUTTON_WIDTH, SCREEN_HEIGHT - MENU_NAV_YPAD,
+                                  width=int(BUTTON_WIDTH // 1.2), heigt=int(BUTTON_HEIGHT // 1.2),
+                                  funk=self.to_next)
+        
+    def to_next(self):
+        if self.current_item != len(self.items) - 1:
+            self.current_item += 1
+
+    def update(self):
+        self.next_button.update()
+
+    def is_clicked(self, event):
+        self.next_button.is_clicked(event)
+
+    def draw (self, screen):
+        screen.blit(self.menu_page, (0, 0))
+
+        screen.blit(self.items[self.current_item].image, self.item_rect)
+
+        if self.items[self.current_item].is_bought:
+            screen.blit(self.bottom_label_on, (0, 0))
+        else:
+            screen.blit(self.bottom_label_off, (0, 0))
+        if self.items[self.current_item].is_using:
+            screen.blit(self.top_label_on, (0, 0))
+        else:
+            screen.blit(self.top_label_off, (0, 0))
+
+        self.next_button.draw(screen)
 
 class Button:
     def __init__(self, text, x, y, width=BUTTON_WIDTH, heigt=BUTTON_HEIGHT, text_font=font, funk=None):
@@ -112,6 +148,8 @@ class Game:
 
         self.costs_of_upgrade = {100: False, 1000: False, 5000: False, 10000: False}
 
+        self.mode = "Main"
+
         self.background = load_immage("images/background.png", SCREEN_WIDTH, SCREEN_HEIGHT)
         
         self.happiness_image = load_immage("images/happiness.png", ICON_SIZE, ICON_SIZE)
@@ -125,7 +163,8 @@ class Game:
         button_x = SCREEN_WIDTH - BUTTON_WIDTH - PADDING
 
         self.eat_button = Button("Еда", button_x, PADDING + ICON_SIZE)
-        self.clothes_button = Button("Одежда", button_x, PADDING + ICON_SIZE * 2)
+        self.clothes_button = Button("Одежда", button_x, PADDING + ICON_SIZE * 2,
+                                     funk=self.clothes_menu_on)
         self.play_button = Button("Игры", button_x, PADDING + ICON_SIZE * 3)
 
         self.upgrade_button = Button("Улучшить", SCREEN_WIDTH - ICON_SIZE, 0,
@@ -133,6 +172,8 @@ class Game:
                                      text_font=mini_font, funk=self.increase_money)
 
         self.buttons = [self.eat_button, self.clothes_button, self.play_button, self.upgrade_button]
+
+        self.clothes_menu = ClothesMeny(self)
 
         self.INCREASE_COINS = pg.USEREVENT + 1
         pg.time.set_timer(self.INCREASE_COINS, 1000)
@@ -143,6 +184,9 @@ class Game:
         self.dog = Dog()
 
         self.run()
+
+    def clothes_menu_on(self):
+        self.mode = "Clothes menu"
 
     def run(self):
         while True:
@@ -165,6 +209,10 @@ class Game:
                 pg.quit()
                 exit()
 
+            if event.type == pg.KEYDOWN:
+                if event.key == pg.K_ESCAPE:
+                    self.mode = "Main"
+
             if event.type == self.INCREASE_COINS:
                 self.money += self.coins_per_second
 
@@ -173,10 +221,13 @@ class Game:
 
             for knopka in self.buttons:
                 knopka.is_clicked(event)
+            self.clothes_menu.is_clicked(event)
 
     def update(self):
         for knopka in self.buttons:
             knopka.update()
+
+        self.clothes_menu.update()
 
     def draw(self):
         self.screen.blit(self.background, (0, 0))
@@ -197,6 +248,9 @@ class Game:
             knopka.draw(self.screen)
 
         self.dog.otris(self.screen)
+
+        if self.mode == "Clothes menu":
+            self.clothes_menu.draw(self.screen)
 
         pg.display.flip()
 
